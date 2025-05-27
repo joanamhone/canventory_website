@@ -178,7 +178,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (treatmentsError) throw treatmentsError;
       
       // NEW DEBUG LOG: Raw data from Supabase before conversion
-      console.log('Raw Treatments Data from Supabase:', rawTreatmentsData);
+     // console.log('Raw Treatments Data from Supabase:', rawTreatmentsData);
 
       const parsedTreatmentsData: Treatment[] = rawTreatmentsData?.map((t: SupabaseTreatment) => {
         // Parse medications and services if they are strings
@@ -217,7 +217,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }) || [];
 
       // ADDED DEBUG LOG HERE
-      console.log('Fetched Treatments (after conversion):', parsedTreatmentsData); 
+     // console.log('Fetched Treatments (after conversion):', parsedTreatmentsData); 
 
       setTreatments(parsedTreatmentsData);
 
