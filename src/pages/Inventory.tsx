@@ -265,7 +265,8 @@ const Inventory: React.FC = () => {
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400 capitalize">{item.category}</td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{item.supplier || '-'}</td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{item.currentStock} {item.unit}</td>
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">K{item.unitCost.toFixed(2)}</td>
+                    {/* Fixed: Use nullish coalescing to ensure unitCost is a number before toFixed */}
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">K{(item.unitCost ?? 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {/* Add Transaction Button for specific item */}
@@ -666,7 +667,7 @@ const Inventory: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium">Unit Cost:</p>
-                  <p>K{selectedInventoryItem.unitCost.toFixed(2)}</p>
+                  <p>K{(selectedInventoryItem.unitCost ?? 0).toFixed(2)}</p> {/* Fixed here */}
                 </div>
                 <div>
                   <p className="font-medium">Reorder Level:</p>
