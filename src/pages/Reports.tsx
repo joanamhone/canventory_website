@@ -55,7 +55,7 @@ const Reports: React.FC = () => {
       isWithinInterval(new Date(treatment.date), { start: getStartOfDay(startDate), end: getEndOfDay(endDate) })
     );
     // Log filtered treatments to inspect their content
-    console.log('Filtered Treatments:', filtered);
+    //console.log('Filtered Treatments:', filtered);
     return filtered;
   }, [treatments, startDate, endDate]);
 
@@ -99,7 +99,7 @@ const Reports: React.FC = () => {
 
     const aggregatedData = Object.values(dataMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     // Log financial report data to inspect values
-    console.log('Financial Report Data:', aggregatedData);
+    //console.log('Financial Report Data:', aggregatedData);
     return aggregatedData;
   }, [filteredPayments, filteredTreatments, startDate, endDate]);
 

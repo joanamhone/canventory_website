@@ -10,7 +10,7 @@ import {
   Home,
   LogOut
 } from 'lucide-react';
-import { supabase } from '../../lib/supabaseClient'; // Import supabase client
+import { supabase } from '../../lib/supabaseClient'; // Corrected import path to go up 3 folders
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook

@@ -54,7 +54,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
           <div>
             <p className="text-sm text-gray-500 font-medium">{title}</p>
             {/* Changed $ to K for value display */}
-            <h3 className="text-2xl font-bold mt-2">K{value}</h3> 
+            <h3 className="text-2xl font-bold mt-2">{value}</h3> 
             
             {change !== undefined && (
               <div className={`flex items-center mt-2 text-sm ${getChangeColor()}`}>
