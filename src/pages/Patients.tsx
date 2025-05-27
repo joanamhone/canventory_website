@@ -163,7 +163,18 @@ const Patients: React.FC = () => {
   // Handler for adding a medication to the current treatment
   const handleAddMedication = () => {
     const medication = inventoryItems.find(item => item.id === selectedMedication.id);
-    if (!medication) return;
+    if (!medication) {
+      toast.error('Please select a valid medication from the inventory.');
+      return;
+    }
+    if (selectedMedication.quantity === '' || isNaN(parseInt(selectedMedication.quantity))) {
+      toast.error('Please enter a valid quantity for the medication.');
+      return;
+    }
+    if (selectedMedication.dosage === '') {
+      toast.error('Please enter a dosage for the medication.');
+      return;
+    }
 
     const quantity = parseInt(selectedMedication.quantity);
     const newMedication: TreatmentMedication = {
@@ -193,6 +204,15 @@ const Patients: React.FC = () => {
 
   // Handler for adding a service to the current treatment
   const handleAddService = () => {
+    if (selectedService.name === '') {
+      toast.error('Please enter a name for the service.');
+      return;
+    }
+    if (selectedService.cost === '' || isNaN(parseFloat(selectedService.cost))) {
+      toast.error('Please enter a valid cost for the service.');
+      return;
+    }
+
     const newService: TreatmentService = {
       id: crypto.randomUUID(),
       name: selectedService.name,
@@ -216,24 +236,25 @@ const Patients: React.FC = () => {
   // Handler for submitting a new treatment
   const handleTreatmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPatient || !user) return;
+    if (!selectedPatient || !user) {
+      toast.error('Patient or user not selected.');
+      return;
+    }
 
-    const totalMedicationsCost = treatmentData.medications.reduce(
-      (sum, med) => sum + med.totalCost,
-      0
-    );
+    if (treatmentData.medications.length === 0 && treatmentData.services.length === 0) {
+      toast.error('Please add at least one medication or service to the treatment.');
+      return;
+    }
 
-    const totalServicesCost = treatmentData.services.reduce(
-      (sum, service) => sum + service.cost,
-      0
-    );
-
-    const treatment: Omit<Treatment, 'id' | 'createdAt' | 'updatedAt' | 'amountPaid' | 'paymentStatus'> = {
+    // totalCost is now calculated in AppContext, so we don't need to pass it here.
+    // The type definition for addTreatment in AppContextType has been updated.
+    const treatment: Omit<Treatment, 'id' | 'createdAt' | 'updatedAt' | 'amountPaid' | 'paymentStatus' | 'totalCost'> = {
       ...treatmentData,
       patientId: selectedPatient.id,
-      totalCost: totalMedicationsCost + totalServicesCost,
       userId: user.id, // Explicitly add userId
     };
+
+    console.log('Treatment data being sent to addTreatment:', treatment); // DEBUG LOG
 
     addTreatment(treatment);
     setTreatmentData(initialTreatmentData); // Reset treatment form
@@ -251,10 +272,12 @@ const Patients: React.FC = () => {
 
     if (paymentAmount <= 0) {
         console.error("Payment amount must be greater than zero.");
+        toast.error("Payment amount must be greater than zero.");
         return;
     }
     if (newAmountPaid > selectedTreatment.totalCost + 0.01) { // Allow for small floating point errors
         console.error("Payment amount exceeds outstanding balance.");
+        toast.error("Payment amount exceeds outstanding balance.");
         return;
     }
 
@@ -279,8 +302,10 @@ const Patients: React.FC = () => {
         setPaymentData(initialPaymentData); // Reset payment form
         setSelectedTreatment(null); // Clear selected treatment
         setShowRecordPayment(false); // Close payment modal
+        toast.success('Payment recorded successfully!');
     } catch (error) {
         console.error("Failed to record payment:", error);
+        toast.error('Failed to record payment.');
     }
   };
 
@@ -765,11 +790,10 @@ const Patients: React.FC = () => {
                     </label>
                     <DatePicker
                       selected={treatmentData.date}
-                      onChange={(date: Date) => setTreatmentData(prev => ({ ...prev, date }))}
+                      onChange={(date: Date) => setTreatmentData(prev => ({ ...prev, date: date || new Date() }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Diagnosis
@@ -783,14 +807,13 @@ const Patients: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Notes
+                      Notes (Optional)
                     </label>
                     <textarea
                       name="notes"
-                      value={treatmentData.notes || ''}
+                      value={treatmentData.notes}
                       onChange={handleTreatmentInputChange}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
@@ -799,30 +822,9 @@ const Patients: React.FC = () => {
                 </div>
 
                 {/* Medications Section */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                  <h3 className="text-lg font-semibold dark:text-white mb-4">Medications</h3>
-                  <div className="space-y-4">
-                    {treatmentData.medications.map((med, index) => (
-                      <div key={index} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                        <div className="flex-1">
-                          <p className="font-medium dark:text-white">{med.name} ({med.dosage})</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {med.quantity} | Cost: K{med.totalCost.toFixed(2)}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setTreatmentData(prev => ({
-                            ...prev,
-                            medications: prev.medications.filter((_, i) => i !== index)
-                          }))}
-                          className="p-1 text-error hover:bg-error/10 rounded-full"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-md text-gray-800 dark:text-white mb-3">Medications</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Select Medication
@@ -834,11 +836,13 @@ const Patients: React.FC = () => {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                       >
                         <option value="">-- Select --</option>
-                        {inventoryItems.filter(item => item.category === 'medication').map(item => (
-                          <option key={item.id} value={item.id}>
-                            {item.name} (Stock: {item.currentStock} {item.unit})
-                          </option>
-                        ))}
+                        {inventoryItems
+                          .filter(item => item.category === 'medication')
+                          .map(item => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} ({item.currentStock} {item.unit} left)
+                            </option>
+                          ))}
                       </select>
                     </div>
                     <div>
@@ -863,12 +867,13 @@ const Patients: React.FC = () => {
                         name="dosage"
                         value={selectedMedication.dosage}
                         onChange={handleMedicationChange}
+                        placeholder="e.g., 1 tablet twice daily"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                     </div>
-                    <div>
+                    <div className="lg:col-span-3"> {/* Full width for instructions */}
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Instructions
+                        Instructions (Optional)
                       </label>
                       <input
                         type="text"
@@ -882,37 +887,42 @@ const Patients: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAddMedication}
-                    className="mt-4 px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-700 transition-colors"
+                    className="px-3 py-1 bg-secondary text-white rounded-md hover:bg-secondary-700 transition-colors text-sm"
                   >
                     Add Medication
                   </button>
+
+                  {/* Display Added Medications */}
+                  {treatmentData.medications.length > 0 && (
+                    <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Added Medications:</h4>
+                      <ul className="space-y-2">
+                        {treatmentData.medications.map((med, index) => (
+                          <li key={med.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded-md">
+                            <span className="text-gray-800 dark:text-white text-sm">
+                              {med.name} - {med.quantity} {med.quantity > 1 ? 'units' : 'unit'} ({med.dosage})
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setTreatmentData(prev => ({
+                                ...prev,
+                                medications: prev.medications.filter((_, i) => i !== index)
+                              }))}
+                              className="text-error hover:text-red-700 p-1 rounded-full"
+                            >
+                              <X size={16} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Services Section */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                  <h3 className="text-lg font-semibold dark:text-white mb-4">Services</h3>
-                  <div className="space-y-4">
-                    {treatmentData.services.map((service, index) => (
-                      <div key={index} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                        <div className="flex-1">
-                          <p className="font-medium dark:text-white">{service.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Cost: K{service.cost.toFixed(2)}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setTreatmentData(prev => ({
-                            ...prev,
-                            services: prev.services.filter((_, i) => i !== index)
-                          }))}
-                          className="p-1 text-error hover:bg-error/10 rounded-full"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-md text-gray-800 dark:text-white mb-3">Services</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Service Name
@@ -939,9 +949,9 @@ const Patients: React.FC = () => {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                       />
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2"> {/* Full width for description */}
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Description
+                        Description (Optional)
                       </label>
                       <textarea
                         name="description"
@@ -955,10 +965,36 @@ const Patients: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAddService}
-                    className="mt-4 px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-700 transition-colors"
+                    className="px-3 py-1 bg-secondary text-white rounded-md hover:bg-secondary-700 transition-colors text-sm"
                   >
                     Add Service
                   </button>
+
+                  {/* Display Added Services */}
+                  {treatmentData.services.length > 0 && (
+                    <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Added Services:</h4>
+                      <ul className="space-y-2">
+                        {treatmentData.services.map((service, index) => (
+                          <li key={service.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded-md">
+                            <span className="text-gray-800 dark:text-white text-sm">
+                              {service.name} - K{(service.cost ?? 0).toFixed(2)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setTreatmentData(prev => ({
+                                ...prev,
+                                services: prev.services.filter((_, i) => i !== index)
+                              }))}
+                              className="text-error hover:text-red-700 p-1 rounded-full"
+                            >
+                              <X size={16} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -975,7 +1011,7 @@ const Patients: React.FC = () => {
                   className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
                 >
                   <Check size={16} />
-                  Save Treatment
+                  Record Treatment
                 </button>
               </div>
             </form>
@@ -997,87 +1033,91 @@ const Patients: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-4 space-y-6">
-              {/* Patient Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
-                <div>
-                  <p className="font-medium">Age:</p>
-                  <p>{selectedPatient.age}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Gender:</p>
-                  <p className="capitalize">{selectedPatient.gender}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Residence:</p>
-                  <p>{selectedPatient.residence}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Phone:</p>
-                  <p>{selectedPatient.phone || '-'}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Email:</p>
-                  <p>{selectedPatient.email || '-'}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Address:</p>
-                  <p>{selectedPatient.address || '-'}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Total Outstanding Balance:</p>
-                  <p className={`${calculateTotalOwed(selectedPatient.id) > 0.01 ? 'text-error' : 'text-success dark:text-green-400'} font-semibold`}>
-                    K{calculateTotalOwed(selectedPatient.id).toFixed(2)}
-                  </p>
+            <div className="p-6 space-y-6">
+              {/* Patient Info Section */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><span className="font-semibold">Name:</span> {selectedPatient.name}</p>
+                    <p><span className="font-semibold">Age:</span> {selectedPatient.age}</p>
+                    <p><span className="font-semibold">Gender:</span> {selectedPatient.gender}</p>
+                    <p><span className="font-semibold">Residence:</span> {selectedPatient.residence}</p>
+                  </div>
+                  <div>
+                    <p><span className="font-semibold">Phone:</span> {selectedPatient.phone || 'N/A'}</p>
+                    <p><span className="font-semibold">Email:</span> {selectedPatient.email || 'N/A'}</p>
+                    <p><span className="font-semibold">Address:</span> {selectedPatient.address || 'N/A'}</p>
+                    <p className="flex items-center gap-1">
+                      <span className="font-semibold">Outstanding Balance:</span>
+                      {selectedPatient.hasOutstandingBalance ? (
+                        <span className="text-error font-medium">K{selectedPatient.totalOutstanding.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-success dark:text-green-400">Paid</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Treatments History */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-lg font-semibold dark:text-white mb-4">Treatments History</h3>
+              {/* Treatments History Section */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Treatment History</h3>
                 {getPatientTreatments(selectedPatient.id).length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400">No treatments recorded for this patient.</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No treatments recorded for this patient.</p>
                 ) : (
                   <div className="space-y-4">
                     {getPatientTreatments(selectedPatient.id).map(treatment => (
-                      <div key={treatment.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="font-medium dark:text-white">
-                            Treatment on {format(new Date(treatment.date), 'PPP')}
-                          </p>
-                          <span className={`px-2 py-1 text-xs rounded-full capitalize ${
-                            treatment.paymentStatus === 'paid' ? 'bg-success/20 text-success' :
-                            treatment.paymentStatus === 'partial' ? 'bg-yellow-500/20 text-yellow-700' :
-                            'bg-error/20 text-error'
-                          }`}>
-                            {treatment.paymentStatus}
-                          </span>
+                      <div key={treatment.id} className="bg-white dark:bg-gray-800 rounded-md shadow-sm p-3">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{treatment.diagnosis}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {format(new Date(treatment.date), 'MMM dd, yyyy')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-md font-bold text-primary">K{treatment.totalCost.toFixed(2)}</p>
+                            <span className={`text-sm font-medium ${
+                              treatment.paymentStatus === 'paid' ? 'text-success' :
+                              treatment.paymentStatus === 'partial' ? 'text-warning' : 'text-error'
+                            }`}>
+                              {treatment.paymentStatus.charAt(0).toUpperCase() + treatment.paymentStatus.slice(1)}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 mb-2">Diagnosis: {treatment.diagnosis}</p>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">Notes: {treatment.notes || 'N/A'}</p>
-                        <div className="mt-2 text-sm">
-                          <p className="text-gray-700 dark:text-gray-300">Total Cost: K{treatment.totalCost.toFixed(2)}</p>
-                          <p className="text-gray-700 dark:text-gray-300">Amount Paid: K{treatment.amountPaid.toFixed(2)}</p>
-                          <p className="text-gray-700 dark:text-gray-300">Outstanding: K{(treatment.totalCost - treatment.amountPaid).toFixed(2)}</p>
-                        </div>
-                        <div className="mt-3 flex justify-end gap-2">
-                          {treatment.paymentStatus !== 'paid' && (
-                            <button
-                              onClick={() => {
-                                setSelectedTreatment(treatment);
-                                setShowRecordPayment(true);
-                              }}
-                              className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                            >
-                              <CreditCard size={16} /> Record Payment
-                            </button>
-                          )}
+                        <div className="mt-2 flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTreatment(treatment);
+                              setShowRecordPayment(true);
+                            }}
+                            disabled={treatment.paymentStatus === 'paid'}
+                            className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors text-xs flex items-center gap-1"
+                          >
+                            <CreditCard size={14} /> Record Payment
+                          </button>
+                          <button
+                            onClick={() => setSelectedTreatment(treatment)} // Set selected treatment to show details
+                            className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs flex items-center gap-1"
+                          >
+                            <FileText size={14} /> View Details
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-end">
+              <button
+                onClick={() => setShowPatientDetails(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -1099,36 +1139,36 @@ const Patients: React.FC = () => {
 
             <form onSubmit={handleRecordPaymentSubmit} className="p-4">
               <div className="space-y-4">
-                <p className="text-gray-700 dark:text-gray-300">
-                  Patient: <span className="font-medium">{selectedPatient.name}</span>
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  Treatment: <span className="font-medium">{selectedTreatment.diagnosis}</span>
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  Total Cost: <span className="font-medium">K{selectedTreatment.totalCost.toFixed(2)}</span>
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  Amount Paid: <span className="font-medium">K{selectedTreatment.amountPaid.toFixed(2)}</span>
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  Outstanding Balance: <span className="font-medium text-error">
-                    K{(selectedTreatment.totalCost - selectedTreatment.amountPaid).toFixed(2)}
-                  </span>
-                </p>
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Patient: <span className="font-medium">{selectedPatient.name}</span>
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Treatment for: <span className="font-medium">{selectedTreatment.diagnosis}</span>
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Total Cost: <span className="font-medium">K{selectedTreatment.totalCost.toFixed(2)}</span>
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Amount Paid: <span className="font-medium">K{selectedTreatment.amountPaid.toFixed(2)}</span>
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300 text-lg font-bold mt-2">
+                    Outstanding: <span className="text-error">K{(selectedTreatment.totalCost - selectedTreatment.amountPaid).toFixed(2)}</span>
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Payment Amount
+                    Payment Amount (K)
                   </label>
                   <input
                     type="number"
                     name="amount"
                     value={paymentData.amount}
                     onChange={handlePaymentInputChange}
-                    required
                     min="0.01"
                     step="0.01"
+                    required
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
@@ -1139,7 +1179,7 @@ const Patients: React.FC = () => {
                   </label>
                   <DatePicker
                     selected={paymentData.paymentDate}
-                    onChange={(date: Date) => setPaymentData(prev => ({ ...prev, paymentDate: date }))}
+                    onChange={(date: Date) => setPaymentData(prev => ({ ...prev, paymentDate: date || new Date() }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
@@ -1158,10 +1198,185 @@ const Patients: React.FC = () => {
                   className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
                 >
                   <Check size={16} />
-                  Record Payment
+                  Confirm Payment
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Treatment Details Modal (re-used from RecentTreatments, adapted for Patients page) */}
+      {selectedTreatment && !showRecordPayment && ( // Only show if not recording payment
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Treatment Details</h2>
+              <button
+                onClick={() => setSelectedTreatment(null)}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[80vh] overflow-y-auto">
+              {/* Patient Information */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Patient Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {(() => {
+                    const patient = patients.find(p => p.id === selectedTreatment.patientId);
+                    return patient ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Name:</span>
+                          <span className="font-medium">{patient.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Age:</span>
+                          <span>{patient.age} years</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Gender:</span>
+                          <span className="capitalize">{patient.gender}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Residence:</span>
+                          <span>{patient.residence}</span>
+                        </div>
+                        {patient.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Phone:</span>
+                            <span>{patient.phone}</span>
+                          </div>
+                        )}
+                        {patient.email && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Email:</span>
+                            <span>{patient.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">Patient information not found</p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Treatment Information */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Treatment Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Date:</span>
+                      <span>{format(new Date(selectedTreatment.date), 'MMMM dd,yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Diagnosis:</span>
+                      <span className="font-medium">{selectedTreatment.diagnosis}</span>
+                    </div>
+                    {selectedTreatment.notes && (
+                      <div>
+                        <span className="text-gray-600 block mb-1">Notes:</span>
+                        <p className="text-gray-800 bg-white p-2 rounded">{selectedTreatment.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Medications */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Prescribed Medications</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {selectedTreatment.medications.length > 0 ? (
+                    <div className="space-y-4">
+                      {selectedTreatment.medications.map(medication => (
+                        <div key={medication.id} className="bg-white p-3 rounded-lg shadow-sm">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{medication.name}</h4>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {medication.quantity} units @ K{(medication.unitCost ?? 0).toFixed(2)} each
+                              </p>
+                              <p className="text-sm text-gray-600">Dosage: {medication.dosage}</p>
+                              {medication.instructions && (
+                                <p className="text-sm text-gray-600">
+                                  Instructions: {medication.instructions}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-primary font-medium">
+                              K{(medication.totalCost ?? 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between pt-2 text-sm font-medium">
+                        <span>Total Medications Cost:</span>
+                        <span>K{selectedTreatment.medications.reduce((sum, med) => sum + (med.totalCost ?? 0), 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-2">No medications prescribed</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Services */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Services Provided</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {selectedTreatment.services.length > 0 ? (
+                    <div className="space-y-4">
+                      {selectedTreatment.services.map(service => (
+                        <div key={service.id} className="bg-white p-3 rounded-lg shadow-sm">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{service.name}</h4>
+                              {service.description && (
+                                <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                              )}
+                            </div>
+                            <span className="text-secondary font-medium">
+                              K{(service.cost ?? 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between pt-2 text-sm font-medium">
+                        <span>Total Services Cost:</span>
+                        <span>K{selectedTreatment.services.reduce((sum, service) => sum + (service.cost ?? 0), 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-2">No services provided</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Cost */}
+              <div className="bg-primary-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total Treatment Cost:</span>
+                  <span className="text-xl font-bold text-primary">
+                    K{(selectedTreatment.totalCost ?? 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setSelectedTreatment(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

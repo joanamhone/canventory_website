@@ -51,9 +51,12 @@ const Reports: React.FC = () => {
   }, [payments, startDate, endDate]);
 
   const filteredTreatments = useMemo(() => {
-    return treatments.filter(treatment =>
+    const filtered = treatments.filter(treatment =>
       isWithinInterval(new Date(treatment.date), { start: getStartOfDay(startDate), end: getEndOfDay(endDate) })
     );
+    // Log filtered treatments to inspect their content
+    console.log('Filtered Treatments:', filtered);
+    return filtered;
   }, [treatments, startDate, endDate]);
 
   const filteredInventoryTransactions = useMemo(() => {
@@ -94,7 +97,10 @@ const Reports: React.FC = () => {
       }
     });
 
-    return Object.values(dataMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const aggregatedData = Object.values(dataMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Log financial report data to inspect values
+    console.log('Financial Report Data:', aggregatedData);
+    return aggregatedData;
   }, [filteredPayments, filteredTreatments, startDate, endDate]);
 
   const revenueDistributionData = useMemo(() => {
@@ -264,7 +270,7 @@ const Reports: React.FC = () => {
             >
               <span className="font-semibold">{entry.name}:</span> {
                 entry.name.includes('Revenue') || entry.name.includes('Value') || entry.name.includes('Cost')
-                  ? `K${entry.value.toFixed(2)}` // Changed $ to K
+                  ? `K${entry.value.toFixed(2)}`
                   : entry.value
               }
             </p>
@@ -352,7 +358,7 @@ const Reports: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Total Revenue</p>
-              <h3 className="text-2xl font-bold mt-2">K{totalRevenue.toFixed(2)}</h3> {/* Changed $ to K */}
+              <h3 className="text-2xl font-bold mt-2">K{totalRevenue.toFixed(2)}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd,yyyy')}
               </p>
@@ -367,7 +373,7 @@ const Reports: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Avg. Daily Revenue</p>
-              <h3 className="text-2xl font-bold mt-2">K{avgDailyRevenue.toFixed(2)}</h3> {/* Changed $ to K */}
+              <h3 className="text-2xl font-bold mt-2">K{avgDailyRevenue.toFixed(2)}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 Per day over {days} days
               </p>
@@ -388,7 +394,7 @@ const Reports: React.FC = () => {
               </p>
               <h3 className="text-2xl font-bold mt-2">
                 {reportType === 'financial' && activePatientsInPeriod}
-                {reportType === 'inventory' && `K${inventoryValue.toFixed(2)}`} {/* Changed $ to K */}
+                {reportType === 'inventory' && `K${inventoryValue.toFixed(2)}`}
                 {reportType === 'patient' && totalPatients}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -469,7 +475,7 @@ const Reports: React.FC = () => {
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="font-semibold text-lg">Revenue Distribution</h3>
               </div>
-              <div className="p-4 h-80 flex items-center justify-center"> {/* Added flex for centering */}
+              <div className="p-4 h-80 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -486,7 +492,7 @@ const Reports: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} /> {/* Changed $ to K */}
+                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -505,8 +511,8 @@ const Reports: React.FC = () => {
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(value) => `K${value}`} /> {/* Changed $ to K */}
-                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} /> {/* Changed $ to K */}
+                    <YAxis tickFormatter={(value) => `K${value}`} />
+                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} />
                     <Bar dataKey="value" name="Revenue" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -540,7 +546,7 @@ const Reports: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} /> {/* Changed $ to K */}
+                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
