@@ -6,6 +6,7 @@ export type InventoryReferenceType = 'treatment' | 'purchase' | 'manual';
 export type StockAlertType = 'low' | 'expired' | 'expiring';
 
 export interface InventoryItem {
+  type: string;
   id: string;
   name: string;
   category: InventoryItemCategory;

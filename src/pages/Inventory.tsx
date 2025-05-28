@@ -113,7 +113,8 @@ const Inventory: React.FC = () => {
       unitCost: parseFloat(itemData.unitCost),
       reorderLevel: parseInt(itemData.reorderLevel, 10),
       reorderQuantity: parseInt(itemData.reorderQuantity, 10),
-      notes: itemData.notes === '' ? null : itemData.notes, // Convert empty string to null
+      notes: itemData.notes === '' ? null : itemData.notes,
+      type: ''
     };
 
     if (editingItem) {
@@ -179,7 +180,7 @@ const Inventory: React.FC = () => {
     <div className="space-y-6">
       {/* Header and Buttons */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Inventory</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-black">Inventory</h1>
         <div className="flex gap-3">
           <button
             onClick={() => {
@@ -212,18 +213,18 @@ const Inventory: React.FC = () => {
           placeholder="Search inventory by name, category, or supplier..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-sm"
         />
         <Search size={18} className="absolute left-3 top-2.5 text-gray-500" />
       </div>
 
       {/* Inventory List Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-card overflow-hidden">
+      <div className="bg-white rounded-lg shadow-card overflow-hidden">
         {filteredInventoryItems.length === 0 ? (
           <div className="p-8 text-center">
-            <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">No inventory items found</h3>
-            <p className="text-gray-500 dark:text-gray-400">
+            <Package size={48} className="mx-auto text-gray-300 mb-3" />
+            <h3 className="text-lg font-medium text-gray-700 mb -1 ">No inventory items found</h3>
+            <p className="text-gray-500 ">
               {searchTerm
                 ? `No results for "${searchTerm}"`
                 : "You haven't added any inventory items yet"}
@@ -240,7 +241,7 @@ const Inventory: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full table-auto">
-              <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+              <thead className="bg-gray-50 text-gray-700 text-sm">
                 <tr>
                   <th className="px-6 py-3 text-left font-medium">Item Name</th>
                   <th className="px-6 py-3 text-left font-medium">Category</th>
@@ -250,11 +251,11 @@ const Inventory: React.FC = () => {
                   <th className="px-6 py-3 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+              <tbody className="divide-y divide-gray-200">
                 {filteredInventoryItems.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
+                      <div className="font-medium text-gray-900">{item.name}</div>
                       {item.currentStock <= item.reorderLevel && (
                         <div className="flex items-center gap-1 text-xs text-error mt-1">
                           <AlertTriangle size={12} />
@@ -262,11 +263,11 @@ const Inventory: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 capitalize">{item.category}</td>
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{item.supplier || '-'}</td>
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{item.currentStock} {item.unit}</td>
+                    <td className="px-6 py-4 text-gray-500 capitalize">{item.category}</td>
+                    <td className="px-6 py-4 text-gray-500 ">{item.supplier || '-'}</td>
+                    <td className="px-6 py-4 text-gray-500 ">{item.currentStock} {item.unit}</td>
                     {/* Fixed: Use nullish coalescing to ensure unitCost is a number before toFixed */}
-                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">K{(item.unitCost ?? 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-500 ">K{(item.unitCost ?? 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {/* Add Transaction Button for specific item */}
@@ -276,14 +277,14 @@ const Inventory: React.FC = () => {
                             setTransactionData(initialTransactionData); // Reset transaction form
                             setShowTransactionForm(true);
                           }}
-                          className="p-1 text-gray-500 dark:text-gray-400 hover:text-secondary dark:hover:text-secondary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                          className="p-1 text-gray-500 hover:text-primary rounded-full hover:bg-gray-100"
                           title="Add Transaction"
                         >
                           <History size={18} />
                         </button>
                         {/* Edit Item Button */}
                         <button
-                          className="p-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                          className="p-1 text-gray-500 hover:text-primary rounded-full hover:bg-gray-100"
                           onClick={() => {
                             setEditingItem(item);
                             setItemData({
@@ -306,7 +307,7 @@ const Inventory: React.FC = () => {
                         {/* Delete Item Button */}
                         <button
                           onClick={() => deleteInventoryItem(item.id)}
-                          className="p-1 text-gray-500 dark:text-gray-400 hover:text-error dark:hover:text-error-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                          className="p-1 text-gray-500 hover:text-error rounded-full hover:bg-gray-100"
                           title="Delete Item"
                         >
                           <Trash size={18} />
@@ -317,7 +318,7 @@ const Inventory: React.FC = () => {
                             setSelectedInventoryItem(item);
                             setShowItemDetails(true);
                           }}
-                          className="p-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                          className="p-1 text-gray-500 hover:text-primary rounded-full hover:bg-gray-100"
                           title="View Details"
                         >
                           <Info size={18} />
@@ -332,17 +333,17 @@ const Inventory: React.FC = () => {
         )}
       </div>
 
-      {/* Add/Edit Item Modal */}
+            {/* Add/Edit Item Modal */}
       {showAddItemForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">
                 {editingItem ? 'Edit Inventory Item' : 'Add New Inventory Item'}
               </h2>
               <button
                 onClick={() => setShowAddItemForm(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
               >
                 <X size={20} />
               </button>
@@ -351,7 +352,7 @@ const Inventory: React.FC = () => {
             <form onSubmit={handleItemSubmit} className="p-4">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Item Name
                   </label>
                   <input
@@ -360,11 +361,11 @@ const Inventory: React.FC = () => {
                     value={itemData.name}
                     onChange={handleItemInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
                   <select
@@ -372,7 +373,7 @@ const Inventory: React.FC = () => {
                     value={itemData.category}
                     onChange={handleItemInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="">-- Select Category --</option>
                     <option value="medication">Medication</option>
@@ -381,7 +382,7 @@ const Inventory: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Supplier
                   </label>
                   <input
@@ -389,12 +390,12 @@ const Inventory: React.FC = () => {
                     name="supplier"
                     value={itemData.supplier}
                     onChange={handleItemInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Current Stock
                     </label>
                     <input
@@ -404,11 +405,11 @@ const Inventory: React.FC = () => {
                       onChange={handleItemInputChange}
                       required
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Unit
                     </label>
                     <input
@@ -416,12 +417,12 @@ const Inventory: React.FC = () => {
                       name="unit"
                       value={itemData.unit}
                       onChange={handleItemInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Unit Cost (K)
                   </label>
                   <input
@@ -432,12 +433,12 @@ const Inventory: React.FC = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Reorder Level
                     </label>
                     <input
@@ -446,11 +447,11 @@ const Inventory: React.FC = () => {
                       value={itemData.reorderLevel}
                       onChange={handleItemInputChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Reorder Quantity
                     </label>
                     <input
@@ -459,12 +460,12 @@ const Inventory: React.FC = () => {
                       value={itemData.reorderQuantity}
                       onChange={handleItemInputChange}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Notes
                   </label>
                   <textarea
@@ -472,7 +473,7 @@ const Inventory: React.FC = () => {
                     value={itemData.notes ?? ''} // Use nullish coalescing for notes
                     onChange={handleItemInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   ></textarea>
                 </div>
               </div>
@@ -481,7 +482,7 @@ const Inventory: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddItemForm(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -498,15 +499,15 @@ const Inventory: React.FC = () => {
         </div>
       )}
 
-      {/* Add Transaction Modal */}
+            {/* Add Transaction Modal */}
       {showTransactionForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold dark:text-white">Add Inventory Transaction</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Add Inventory Transaction</h2>
               <button
                 onClick={() => setShowTransactionForm(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
               >
                 <X size={20} />
               </button>
@@ -515,7 +516,7 @@ const Inventory: React.FC = () => {
             <form onSubmit={handleTransactionSubmit} className="p-4">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Select Item
                   </label>
                   <select
@@ -526,7 +527,7 @@ const Inventory: React.FC = () => {
                       setSelectedInventoryItem(inventoryItems.find(item => item.id === selectedId) || null);
                     }}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="">-- Select an item --</option>
                     {inventoryItems.map(item => (
@@ -538,7 +539,7 @@ const Inventory: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Transaction Type
                   </label>
                   <select
@@ -546,7 +547,7 @@ const Inventory: React.FC = () => {
                     value={transactionData.type}
                     onChange={handleTransactionInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="addition">Addition</option>
                     <option value="deduction">Deduction</option>
@@ -555,7 +556,7 @@ const Inventory: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Quantity
                   </label>
                   <input
@@ -565,12 +566,12 @@ const Inventory: React.FC = () => {
                     onChange={handleTransactionInputChange}
                     required
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Reason
                   </label>
                   <textarea
@@ -578,12 +579,12 @@ const Inventory: React.FC = () => {
                     value={transactionData.reason}
                     onChange={handleTransactionInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   ></textarea>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Reference ID (Optional)
                   </label>
                   <input
@@ -591,12 +592,12 @@ const Inventory: React.FC = () => {
                     name="referenceId"
                     value={transactionData.referenceId}
                     onChange={handleTransactionInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Reference Type
                   </label>
                   <select
@@ -604,7 +605,7 @@ const Inventory: React.FC = () => {
                     value={transactionData.referenceType}
                     onChange={handleTransactionInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="manual">Manual</option>
                     <option value="treatment">Treatment</option>
@@ -617,7 +618,7 @@ const Inventory: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowTransactionForm(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -634,15 +635,16 @@ const Inventory: React.FC = () => {
         </div>
       )}
 
-      {/* Item Details Modal */}
+
+            {/* Item Details Modal */}
       {showItemDetails && selectedInventoryItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold dark:text-white">Item Details: {selectedInventoryItem.name}</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Item Details: {selectedInventoryItem.name}</h2>
               <button
                 onClick={() => setShowItemDetails(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
               >
                 <X size={20} />
               </button>
@@ -650,7 +652,7 @@ const Inventory: React.FC = () => {
 
             <div className="p-4 space-y-6">
               {/* Item Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
                 <div>
                   <p className="font-medium">Category:</p>
                   <p className="capitalize">{selectedInventoryItem.category}</p>
@@ -684,39 +686,39 @@ const Inventory: React.FC = () => {
               </div>
 
               {/* Transaction History */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-lg font-semibold dark:text-white mb-4">Transaction History</h3>
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Transaction History</h3>
                 {getItemTransactions(selectedInventoryItem.id).length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400">No transactions recorded for this item.</p>
+                  <p className="text-gray-500">No transactions recorded for this item.</p>
                 ) : (
                   <div className="space-y-3">
                     {getItemTransactions(selectedInventoryItem.id).map(transaction => (
-                      <div key={transaction.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                      <div key={transaction.id} className="bg-gray-50 p-3 rounded-md">
                         <div className="flex justify-between items-center mb-1">
                           <span className={`font-medium capitalize ${
-                            transaction.type === 'addition' ? 'text-success dark:text-green-400' :
+                            transaction.type === 'addition' ? 'text-green-600' :
                             transaction.type === 'deduction' ? 'text-error' :
-                            'text-yellow-700 dark:text-yellow-500'
+                            'text-yellow-700'
                           }`}>
                             {transaction.type}
                           </span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                          <span className="text-sm text-gray-500">
                             {format(new Date(transaction.createdAt), 'PPP p')}
                           </span>
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300">
+                        <p className="text-gray-700">
                           Quantity: {transaction.quantity} {selectedInventoryItem.unit}
                         </p>
-                        <p className="text-gray-700 dark:text-gray-300">
+                        <p className="text-gray-700">
                           New Balance: {transaction.balance} {selectedInventoryItem.unit}
                         </p>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">Reason: {transaction.reason || 'N/A'}</p>
+                        <p className="text-gray-500 text-sm">Reason: {transaction.reason || 'N/A'}</p>
                         {transaction.referenceId && (
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
+                          <p className="text-gray-500 text-sm">
                             Reference: {transaction.referenceType} ({transaction.referenceId})
                           </p>
                         )}
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        <p className="text-gray-500 text-sm">
                           Recorded by: {transaction.createdBy || 'N/A'}
                         </p>
                       </div>
@@ -728,6 +730,7 @@ const Inventory: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

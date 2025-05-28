@@ -178,7 +178,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (treatmentsError) throw treatmentsError;
       
       // NEW DEBUG LOG: Raw data from Supabase before conversion
-     // console.log('Raw Treatments Data from Supabase:', rawTreatmentsData);
+      console.log('Raw Treatments Data from Supabase:', rawTreatmentsData);
 
       const parsedTreatmentsData: Treatment[] = rawTreatmentsData?.map((t: SupabaseTreatment) => {
         // Parse medications and services if they are strings
@@ -217,7 +217,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }) || [];
 
       // ADDED DEBUG LOG HERE
-     // console.log('Fetched Treatments (after conversion):', parsedTreatmentsData); 
+      console.log('Fetched Treatments (after conversion):', parsedTreatmentsData); 
 
       setTreatments(parsedTreatmentsData);
 
@@ -227,20 +227,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .select('*');
       if (inventoryError) throw inventoryError;
 
-      const parsedInventoryData = inventoryData?.map(item => ({
-        id: item.id,
-        name: item.name,
-        category: item.category as InventoryItemCategory, // Cast to InventoryItemCategory
-        supplier: item.supplier,
-        currentStock: toSafeNumber(item.current_stock),
-        unit: item.unit,
-        unitCost: toSafeNumber(item.unit_cost),
-        reorderLevel: toSafeNumber(item.reorder_level),
-        reorderQuantity: toSafeNumber(item.reorder_quantity),
-        notes: item.notes,
-        createdAt: item.created_at ? new Date(item.created_at) : new Date(),
-        updatedAt: item.updated_at ? new Date(item.updated_at) : new Date(),
-      })) || [];
+     const parsedInventoryData = inventoryData?.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category as InventoryItemCategory,
+          type: item.category, // ✅ added this line
+          supplier: item.supplier,
+          currentStock: toSafeNumber(item.current_stock),
+          unit: item.unit,
+          unitCost: toSafeNumber(item.unit_cost),
+          reorderLevel: toSafeNumber(item.reorder_level),
+          reorderQuantity: toSafeNumber(item.reorder_quantity),
+          notes: item.notes,
+          createdAt: item.created_at ? new Date(item.created_at) : new Date(),
+          updatedAt: item.updated_at ? new Date(item.updated_at) : new Date(),
+        })) || [];
+
       setInventoryItems(parsedInventoryData);
 
       // Inventory Transactions
@@ -310,24 +312,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
 
-      // Clinic Settings (assume single row settings)
-      const { data: clinicSettingsData, error: clinicSettingsError } = await supabase
-        .from<'clinic_settings', ClinicSettings>('clinic_settings')
-        .select('*')
-        .limit(1)
-        .single();
-      if (!clinicSettingsError && clinicSettingsData) {
-        setClinicSettings({
-          id: clinicSettingsData.id,
-          clinicName: clinicSettingsData.clinic_name,
-          address: clinicSettingsData.address,
-          phone: clinicSettingsData.phone,
-          email: clinicSettingsData.email,
-          logoUrl: clinicSettingsData.logo_url,
-          createdAt: clinicSettingsData.created_at ? new Date(clinicSettingsData.created_at) : new Date(),
-          updatedAt: clinicSettingsData.updated_at ? new Date(clinicSettingsData.updated_at) : new Date(),
-        });
-      }
 
       // Inventory Settings (assume single row settings)
       const { data: inventorySettingsData, error: inventorySettingsError } = await supabase
@@ -839,48 +823,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateClinicSettings = async (settingsData: Partial<ClinicSettings>) => {
-    try {
-      if (!user) {
-        toast.error('Authentication required to update clinic settings.');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('clinic_settings')
-        .upsert({
-          user_id: user.id, // Ensure settings are linked to user
-          clinic_name: settingsData.clinicName,
-          address: settingsData.address,
-          phone: settingsData.phone,
-          email: settingsData.email,
-          logo_url: settingsData.logoUrl,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id', // Upsert based on user_id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setClinicSettings({
-        id: data.id,
-        clinicName: data.clinic_name,
-        address: data.address,
-        phone: data.phone,
-        email: data.email,
-        logoUrl: data.logo_url,
-        createdAt: data.created_at ? new Date(data.created_at) : new Date(),
-        updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
-      });
-      toast.success('Clinic settings updated');
-    } catch (error) {
-      toast.error('Failed to update clinic settings');
-      console.error(error);
-    }
-  };
-
   const updateInventorySettings = async (settingsData: Partial<InventorySettings>) => {
     try {
       if (!user) {
@@ -976,9 +918,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addInventoryTransaction,
     addPayment,
     updatePaymentSettings,
-    updateClinicSettings,
     updateInventorySettings,
     markAlertAsRead,
+    updateClinicSettings: function (): Promise<void> {
+      throw new Error('Function not implemented.');
+    }
   };
 
   return (
