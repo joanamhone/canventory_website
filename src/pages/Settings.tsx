@@ -64,13 +64,11 @@ const Settings: React.FC = () => {
               <div className="text-center py-10">
                 <X size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                 <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Settings Functionality Removed
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400">
-                  All settings-related features have been removed from this version of the application as per your request.
                 </p>
                 <p className="text-gray-500 dark:text-gray-400 mt-2">
-                  You can still manage your account password and log out here.
+           
                 </p>
 
                 {/* Account Section (minimal) */}
