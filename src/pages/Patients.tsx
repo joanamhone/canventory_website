@@ -507,11 +507,13 @@ const Patients: React.FC = () => {
         )}
       </div>
 
-           {/* Add Patient Modal (existing) */}
+     {/* Add Patient Modal (existing) */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Main modal content container */}
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0"> {/* Added flex-shrink-0 */}
               <h2 className="text-lg font-semibold text-gray-800">Add New Patient</h2>
               <button
                 onClick={() => setShowAddForm(false)}
@@ -521,7 +523,8 @@ const Patients: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4">
+            {/* Modal Form Content */}
+            <form onSubmit={handleSubmit} className="p-4 flex-grow"> {/* Added flex-grow */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -612,33 +615,36 @@ const Patients: React.FC = () => {
                   />
                 </div>
               </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
-                >
-                  <Check size={16} />
-                  Save Patient
-                </button>
-              </div>
             </form>
+
+            {/* Modal Footer */}
+            <div className="mt-6 flex justify-end gap-3 p-4 border-t border-gray-200 flex-shrink-0"> {/* Added p-4, border-t, and flex-shrink-0 */}
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
+              >
+                <Check size={16} />
+                Save Patient
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-            {/* Edit Patient Modal */}
+      {/* Edit Patient Modal */}
       {isEditOpen && editingPatient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Main modal content container with responsiveness */}
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-800">Edit Patient</h2>
               <button
                 onClick={() => { setIsEditOpen(false); setEditingPatient(null); }}
@@ -648,7 +654,8 @@ const Patients: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-4">
+            {/* Modal Form Content - now scrolls if needed */}
+            <form onSubmit={handleEditSubmit} className="p-4 flex-grow overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -739,24 +746,25 @@ const Patients: React.FC = () => {
                   />
                 </div>
               </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setIsEditOpen(false); setEditingPatient(null); }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
-                >
-                  <Check size={16} />
-                  Save Changes
-                </button>
-              </div>
             </form>
+
+            {/* Modal Footer */}
+            <div className="mt-6 flex justify-end gap-3 p-4 border-t border-gray-200 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => { setIsEditOpen(false); setEditingPatient(null); }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
+              >
+                <Check size={16} />
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}

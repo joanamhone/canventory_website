@@ -11,7 +11,7 @@ export interface Payment {
   paymentDate: Date;
   method: PaymentMethod; // Using the exported type
   status: PaymentStatus; // Using the exported type
-  notes?: string;
+  notes?: string | null; // Changed to allow null
   createdAt: Date;
   updatedAt: Date;
 }

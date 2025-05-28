@@ -333,11 +333,13 @@ const Inventory: React.FC = () => {
         )}
       </div>
 
-            {/* Add/Edit Item Modal */}
+      {/* Add/Edit Item Modal */}
       {showAddItemForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Main modal content container with responsiveness */}
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-800">
                 {editingItem ? 'Edit Inventory Item' : 'Add New Inventory Item'}
               </h2>
@@ -349,7 +351,8 @@ const Inventory: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleItemSubmit} className="p-4">
+            {/* Modal Form Content - now scrolls if needed */}
+            <form onSubmit={handleItemSubmit} className="p-4 flex-grow overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -478,7 +481,8 @@ const Inventory: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3">
+              {/* Modal Footer */}
+              <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-4 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddItemForm(false)}
@@ -498,12 +502,13 @@ const Inventory: React.FC = () => {
           </div>
         </div>
       )}
-
-            {/* Add Transaction Modal */}
+           {/* Add Transaction Modal */}
       {showTransactionForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Main modal content container with responsiveness */}
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-800">Add Inventory Transaction</h2>
               <button
                 onClick={() => setShowTransactionForm(false)}
@@ -513,7 +518,8 @@ const Inventory: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleTransactionSubmit} className="p-4">
+            {/* Modal Form Content - now scrolls if needed */}
+            <form onSubmit={handleTransactionSubmit} className="p-4 flex-grow overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -614,7 +620,8 @@ const Inventory: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3">
+              {/* Modal Footer */}
+              <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-4 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowTransactionForm(false)}
