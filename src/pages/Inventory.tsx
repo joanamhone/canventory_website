@@ -337,7 +337,7 @@ const Inventory: React.FC = () => {
       {showAddItemForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           {/* Main modal content container with responsiveness */}
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[80vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-800">
@@ -506,7 +506,7 @@ const Inventory: React.FC = () => {
       {showTransactionForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           {/* Main modal content container with responsiveness */}
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-800">Add Inventory Transaction</h2>
@@ -646,7 +646,7 @@ const Inventory: React.FC = () => {
             {/* Item Details Modal */}
       {showItemDetails && selectedInventoryItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800">Item Details: {selectedInventoryItem.name}</h2>
               <button
