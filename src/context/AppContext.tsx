@@ -1,13 +1,96 @@
-// src/context/AppContext.tsx
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { Patient, Treatment, TreatmentMedication, TreatmentService, SupabaseTreatment } from '../types/patient';
-import { InventoryItem, InventoryTransaction, StockAlert, InventoryTransactionType, InventoryReferenceType, InventoryItemCategory } from '../types/inventory';
-import { Payment, PaymentAlert, PaymentSettings } from '../types/payment';
+import { InventoryItem, InventoryTransaction, StockAlert, InventoryTransactionType, InventoryReferenceType, InventoryItemCategory, StockAlertType } from '../types/inventory';
+import { Payment, PaymentAlert, PaymentSettings, PaymentMethod, PaymentStatus } from '../types/payment'; // Import PaymentMethod and PaymentStatus
 import { ClinicSettings, InventorySettings } from '../types/settings';
 import toast from 'react-hot-toast';
 import { addDays, isPast } from 'date-fns';
 import { supabase } from '../lib/supabaseClient';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+
+// Define Supabase specific types for raw data fetched from DB (snake_case)
+interface SupabaseInventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  supplier: string | null;
+  current_stock: number;
+  unit: string;
+  unit_cost: number;
+  reorder_level: number;
+  reorder_quantity: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}
+
+interface SupabaseInventoryTransaction {
+  id: string;
+  inventory_item_id: string;
+  type: string; // Corresponds to InventoryTransactionType
+  quantity: number;
+  balance: number;
+  reason: string;
+  reference_id: string | null;
+  reference_type: string; // Corresponds to InventoryReferenceType
+  created_by: string;
+  created_at: string;
+}
+
+interface SupabaseStockAlert {
+  id: string;
+  inventory_item_id: string;
+  type: string; // Corresponds to StockAlertType
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+interface SupabasePayment {
+  id: string;
+  treatment_id: string;
+  patient_id: string;
+  amount: number;
+  payment_date: string;
+  method: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Updated PaymentSettings interface to include 'id' for internal state management
+interface PaymentSettingsWithId extends PaymentSettings {
+  id: string;
+}
+
+interface SupabasePaymentSettings {
+  id: string;
+  grace_period: number;
+  reminder_intervals: number[];
+  auto_notify: boolean;
+}
+
+interface SupabaseClinicSettings {
+  id: string;
+  clinic_name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SupabaseInventorySettings {
+  id: string;
+  low_stock_threshold: number;
+  enable_auto_reorder: boolean;
+  auto_reorder_threshold: number;
+  created_at: string;
+  updated_at: string;
+}
+
 
 interface AppContextType {
   // Existing states
@@ -18,7 +101,7 @@ interface AppContextType {
   stockAlerts: StockAlert[];
   payments: Payment[];
   paymentAlerts: PaymentAlert[];
-  paymentSettings: PaymentSettings;
+  paymentSettings: PaymentSettingsWithId; // Use the updated interface
   clinicSettings: ClinicSettings | null;
   inventorySettings: InventorySettings;
 
@@ -81,7 +164,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentAlerts, setPaymentAlerts] = useState<PaymentAlert[]>([]);
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
+  // Initialize paymentSettings with an id
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsWithId>({
+    id: '1', // Default ID for settings
     gracePeriod: 30,
     reminderIntervals: [7, 14, 30],
     autoNotify: true,
@@ -101,6 +186,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // State to track if the initial data load error has been toasted
+  const [hasToastedInitialLoadError, setHasToastedInitialLoadError] = useState(false);
+
+
   // Helper function for robust number conversion
   const toSafeNumber = (value: any): number => {
     const num = Number(value);
@@ -111,17 +200,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     setAuthLoading(true);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       setSession(session);
       setUser(session?.user || null);
       setAuthLoading(false);
-    }).catch((error) => {
+    }).catch((error: unknown) => { // Explicitly type error as unknown
       console.error("Error getting session:", error);
       setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event: AuthChangeEvent, session: Session | null) => { // Explicitly type _event and session
         setSession(session);
         setUser(session?.user || null);
         if (_event === 'INITIAL_SESSION' || _event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
@@ -139,6 +228,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // --- Data Fetching Logic (Memoized with useCallback) ---
   const fetchData = useCallback(async () => {
     if (authLoading || !user || !session) {
+      // Clear data if not authenticated or loading
       setPatients([]);
       setTreatments([]);
       setInventoryItems([]);
@@ -147,6 +237,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setPayments([]);
       setPaymentAlerts([]);
       setPaymentSettings({
+        id: '1', // Ensure ID is set when clearing
         gracePeriod: 30,
         reminderIntervals: [7, 14, 30],
         autoNotify: true,
@@ -190,7 +281,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           patientId: t.patient_id,
           diagnosis: t.diagnosis,
           notes: t.notes || undefined,
-          medications: (Array.isArray(medicationsArray) ? medicationsArray : []).map((med: any) => ({
+          medications: (Array.isArray(medicationsArray) ? medicationsArray : []).map((med: TreatmentMedication) => ({ // Explicitly type med
             id: med.id,
             inventoryItemId: med.inventoryItemId,
             name: med.name,
@@ -199,7 +290,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             unitCost: toSafeNumber(med.unitCost),
             totalCost: toSafeNumber(med.totalCost),
           })) as TreatmentMedication[],
-          services: (Array.isArray(servicesArray) ? servicesArray : []).map((service: any) => ({
+          services: (Array.isArray(servicesArray) ? servicesArray : []).map((service: TreatmentService) => ({ // Explicitly type service
             id: service.id,
             name: service.name,
             description: service.description,
@@ -223,15 +314,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Inventory Items
       const { data: inventoryData, error: inventoryError } = await supabase
-        .from<'inventory_items', InventoryItem>('inventory_items')
+        .from<'inventory_items', SupabaseInventoryItem>('inventory_items') // Use SupabaseInventoryItem
         .select('*');
       if (inventoryError) throw inventoryError;
 
-     const parsedInventoryData = inventoryData?.map(item => ({
+     const parsedInventoryData = inventoryData?.map((item: SupabaseInventoryItem) => ({ // Explicitly type item
           id: item.id,
           name: item.name,
           category: item.category as InventoryItemCategory,
-          type: item.category, // ✅ added this line
+          type: item.category, 
           supplier: item.supplier,
           currentStock: toSafeNumber(item.current_stock),
           unit: item.unit,
@@ -247,10 +338,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Inventory Transactions
       const { data: transactionsData, error: transactionsError } = await supabase
-        .from<'inventory_transactions', InventoryTransaction>('inventory_transactions')
+        .from<'inventory_transactions', SupabaseInventoryTransaction>('inventory_transactions') // Use SupabaseInventoryTransaction
         .select('*');
       if (transactionsError) throw transactionsError;
-      const parsedTransactionsData = transactionsData?.map(transaction => ({
+      const parsedTransactionsData = transactionsData?.map((transaction: SupabaseInventoryTransaction) => ({ // Explicitly type transaction
         id: transaction.id,
         inventoryItemId: transaction.inventory_item_id,
         type: transaction.type as InventoryTransactionType,
@@ -266,13 +357,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Stock Alerts
       const { data: stockAlertsData, error: stockAlertsError } = await supabase
-        .from<'stock_alerts', StockAlert>('stock_alerts')
+        .from<'stock_alerts', SupabaseStockAlert>('stock_alerts') // Use SupabaseStockAlert
         .select('*');
       if (stockAlertsError) throw stockAlertsError;
-      const parsedStockAlertsData = stockAlertsData?.map(alert => ({
+      const parsedStockAlertsData: StockAlert[] = stockAlertsData?.map((alert: SupabaseStockAlert) => ({ // Explicitly type alert and cast 'type'
         id: alert.id,
         inventoryItemId: alert.inventory_item_id,
-        type: alert.type,
+        type: alert.type as StockAlertType, // Cast 'type' to StockAlertType
         message: alert.message,
         isRead: alert.is_read,
         createdAt: alert.created_at ? new Date(alert.created_at) : new Date(),
@@ -281,17 +372,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Payments
       const { data: paymentsData, error: paymentsError } = await supabase
-        .from<'payments', Payment>('payments')
+        .from<'payments', SupabasePayment>('payments') // Use SupabasePayment
         .select('*');
       if (paymentsError) throw paymentsError;
-      const parsedPaymentsData: Payment[] = paymentsData?.map(payment => ({
+      const parsedPaymentsData: Payment[] = paymentsData?.map((payment: SupabasePayment) => ({ // Explicitly type payment and cast 'method'
         id: payment.id,
         treatmentId: payment.treatment_id,
         patientId: payment.patient_id,
         amount: payment.amount,
         paymentDate: payment.payment_date ? new Date(payment.payment_date) : new Date(),
-        method: payment.method,
-        status: payment.status,
+        method: payment.method as PaymentMethod, // Cast 'method' to PaymentMethod
+        status: payment.status as PaymentStatus, // Cast 'status' to PaymentStatus
         notes: payment.notes,
         createdAt: payment.created_at ? new Date(payment.created_at) : new Date(),
         updatedAt: payment.updated_at ? new Date(payment.updated_at) : new Date(),
@@ -300,12 +391,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Payment Settings (assume single row settings)
       const { data: paymentSettingsData, error: paymentSettingsError } = await supabase
-        .from<'payment_settings', PaymentSettings>('payment_settings')
+        .from<'payment_settings', SupabasePaymentSettings>('payment_settings') // Use SupabasePaymentSettings
         .select('*')
         .limit(1)
         .single();
       if (!paymentSettingsError && paymentSettingsData) {
         setPaymentSettings({
+          id: paymentSettingsData.id, // Assign the ID from fetched data
           gracePeriod: paymentSettingsData.grace_period,
           reminderIntervals: paymentSettingsData.reminder_intervals,
           autoNotify: paymentSettingsData.auto_notify,
@@ -315,7 +407,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Inventory Settings (assume single row settings)
       const { data: inventorySettingsData, error: inventorySettingsError } = await supabase
-        .from<'inventory_settings', InventorySettings>('inventory_settings')
+        .from<'inventory_settings', SupabaseInventorySettings>('inventory_settings') // Use SupabaseInventorySettings
         .select('*')
         .limit(1)
         .single();
@@ -329,12 +421,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           updatedAt: inventorySettingsData.updated_at ? new Date(inventorySettingsData.updated_at) : new Date(),
         });
       }
-
-    } catch (error) {
-      toast.error('Failed to load data from database');
+      // If data loaded successfully, reset the error toast flag
+      setHasToastedInitialLoadError(false);
+    } catch (error: unknown) { // Explicitly type error as unknown
+      // Only toast if we haven't already toasted this error in the current session
+      if (!hasToastedInitialLoadError) {
+        toast.error('Failed to load data from database');
+        setHasToastedInitialLoadError(true);
+      }
       console.error(error);
     }
-  }, [user, session, authLoading]);
+  }, [user, session, authLoading, hasToastedInitialLoadError]); // Added hasToastedInitialLoadError to dependencies
 
   // --- Trigger Data Fetching when Auth State Changes ---
   useEffect(() => {
@@ -408,10 +505,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       for (const item of inventoryItems) {
         if (item.currentStock <= item.reorderLevel) {
-          const existingAlert = stockAlerts.find(
-            alert => alert.inventoryItemId === item.id && alert.type === 'low' && !alert.isRead
-          );
-          if (!existingAlert) {
+          // Check directly in the database for an existing UNREAD alert for this item
+          const { data: dbExistingAlerts, error: dbCheckError } = await supabase
+            .from('stock_alerts')
+            .select('*')
+            .eq('inventory_item_id', item.id)
+            .eq('type', 'low')
+            .eq('is_read', false) // Crucial: only consider unread alerts
+            .limit(1);
+
+          if (dbCheckError) {
+            console.error('Error checking for existing stock alert in DB:', dbCheckError);
+            continue; // Skip to next item to avoid infinite loop on DB error
+          }
+
+          // If no existing unread alert is found in the database
+          if (!dbExistingAlerts || dbExistingAlerts.length === 0) {
             const newAlert = {
               inventory_item_id: item.id,
               type: 'low',
@@ -426,7 +535,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               const addedAlert: StockAlert = {
                 id: data.id,
                 inventoryItemId: data.inventory_item_id,
-                type: data.type,
+                type: data.type as StockAlertType, // Ensure type is correctly cast
                 message: data.message,
                 isRead: data.is_read,
                 createdAt: data.created_at ? new Date(data.created_at) : new Date(),
@@ -468,14 +577,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         total_outstanding: 0,           // This is correct (snake_case)
         created_at: new Date(),
         updated_at: new Date(),
-        user_id: patientData.userId,
+        user_id: user.id,
       };
       const { error } = await supabase.from('patients').insert([newPatient]).select().single();
       if (error) throw error;
       // setPatients(prev => [...prev, data]); // Removed direct state update
       toast.success(`Patient ${patientData.name} added successfully`);
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to add patient');
       console.error(error);
     }
@@ -501,7 +610,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setPatients(prev => prev.map(p => (p.id === id ? data : p))); // Removed direct state update
       toast.success('Patient updated successfully');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to update patient');
       console.error(error);
     }
@@ -514,7 +623,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setPatients(prev => prev.filter(p => p.id !== id)); // Removed direct state update
       toast.success('Patient deleted successfully');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to delete patient');
       console.error(error);
     }
@@ -531,8 +640,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Calculate totalCost dynamically based on medications and services
       const calculatedTotalCost =
-        (treatmentData.medications?.reduce((sum, med) => sum + (med.totalCost ?? 0), 0) || 0) +
-        (treatmentData.services?.reduce((sum, service) => sum + (service.cost ?? 0), 0) || 0);
+        (treatmentData.medications?.reduce((sum: number, med: TreatmentMedication) => sum + (med.totalCost ?? 0), 0) || 0) + // Explicitly type sum and med
+        (treatmentData.services?.reduce((sum: number, service: TreatmentService) => sum + (service.cost ?? 0), 0) || 0); // Explicitly type sum and service
 
       const newTreatment = {
         diagnosis: treatmentData.diagnosis,
@@ -547,7 +656,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         created_at: new Date(),
         updated_at: new Date(),
         patient_id: treatmentData.patientId,
-        user_id: treatmentData.userId, // Use userId from input
+        user_id: user.id, // Use userId from input
       };
 
       const { data, error } = await supabase.from('treatments').insert(newTreatment).select().single();
@@ -572,14 +681,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             reason: `Used for treatment (Patient ID: ${treatmentData.patientId})`,
             referenceId: data.id,
             referenceType: 'treatment',
-            createdBy: treatmentData.userId
+            createdBy: user.id
           });
         }
       }
 
       toast.success('Treatment recorded successfully');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to add treatment');
       console.error(error);
     }
@@ -609,7 +718,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setTreatments(prev => prev.map(t => (t.id === id ? data : t))); // Removed direct state update
       toast.success('Treatment updated successfully');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to update treatment');
       console.error(error);
     }
@@ -644,7 +753,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setInventoryItems(prev => [...prev, data]); // Removed direct state update
       toast.success('Inventory item added');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to add inventory item');
       console.error(error);
     }
@@ -673,7 +782,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setInventoryItems(prev => prev.map(i => (i.id === id ? data : i))); // Removed direct state update
       toast.success('Inventory item updated');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to update inventory item');
       console.error(error);
     }
@@ -686,7 +795,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setInventoryItems(prev => prev.filter(i => i.id !== id)); // Removed direct state update
       toast.success('Inventory item deleted');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to delete inventory item');
       console.error(error);
     }
@@ -732,7 +841,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // setInventoryTransactions(prev => [...prev, data]); // Removed direct state update
       toast.success('Inventory transaction recorded');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to add inventory transaction');
       console.error(error);
     }
@@ -757,105 +866,91 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         method: paymentData.method,
         status: paymentData.status,
         notes: paymentData.notes,
-        user_id: user.id,
+        user_id: user.id, // Add user ID here
       };
 
       const { error } = await supabase.from('payments').insert(newPayment).select().single();
       if (error) throw error;
-      // setPayments(prev => [...prev, data]); // Removed direct state update
 
-      const treatment = treatments.find(t => t.id === paymentData.treatmentId);
-      if (treatment) {
-        const updatedAmountPaid = toSafeNumber(treatment.amountPaid) + toSafeNumber(paymentData.amount);
-        const updatedStatus = updatedAmountPaid >= toSafeNumber(treatment.totalCost) ? 'paid' : 'partial';
-        await updateTreatment(treatment.id, { amountPaid: updatedAmountPaid, paymentStatus: updatedStatus });
+      // Update the associated treatment's amountPaid and paymentStatus
+      const relatedTreatment = treatments.find(t => t.id === paymentData.treatmentId);
+      if (relatedTreatment) {
+        const newAmountPaidForTreatment = relatedTreatment.amountPaid + paymentData.amount;
+        const newPaymentStatusForTreatment = newAmountPaidForTreatment >= relatedTreatment.totalCost ? 'paid' : 'partial';
 
-        const patient = patients.find(p => p.id === treatment.patientId);
+        await updateTreatment(relatedTreatment.id, {
+          amountPaid: newAmountPaidForTreatment,
+          paymentStatus: newPaymentStatusForTreatment,
+        });
+
+        // Update patient's totalOutstanding balance
+        const patient = patients.find(p => p.id === paymentData.patientId);
         if (patient) {
-          const newOutstanding = toSafeNumber(patient.totalOutstanding) - toSafeNumber(paymentData.amount);
+          const newTotalOutstanding = (patient.totalOutstanding || 0) - paymentData.amount;
           await updatePatient(patient.id, {
-            totalOutstanding: newOutstanding < 0 ? 0 : newOutstanding,
-            hasOutstandingBalance: newOutstanding > 0,
+            totalOutstanding: Math.max(0, newTotalOutstanding), // Ensure it doesn't go below zero
+            hasOutstandingBalance: newTotalOutstanding > 0.01, // Check if still outstanding
           });
         }
       }
 
-      toast.success('Payment recorded');
+      toast.success('Payment recorded successfully');
       await fetchData(); // Re-fetch all data to ensure consistency
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to add payment');
       console.error(error);
     }
   };
 
-  const updatePaymentSettings = async (settingsData: Partial<PaymentSettings>) => {
+  // SETTINGS ACTIONS
+  const updatePaymentSettings = async (settings: Partial<PaymentSettings>) => {
     try {
-      if (!user) {
-        toast.error('Authentication required to update settings.');
-        return;
-      }
-
       const { data, error } = await supabase
         .from('payment_settings')
-        .upsert({
-          user_id: user.id, // Ensure settings are linked to user
-          grace_period: settingsData.gracePeriod,
-          reminder_intervals: settingsData.reminderIntervals,
-          auto_notify: settingsData.autoNotify,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id', // Upsert based on user_id
-        })
+        .update(settings as SupabasePaymentSettings) // Cast to Supabase type for update
+        .eq('id', paymentSettings.id) // Use the ID from state
         .select()
         .single();
-
       if (error) throw error;
-
-      setPaymentSettings({
-        gracePeriod: data.grace_period,
-        reminderIntervals: data.reminder_intervals,
-        autoNotify: data.auto_notify,
-      });
+      setPaymentSettings(prev => ({ ...prev, ...data }));
       toast.success('Payment settings updated');
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to update payment settings');
       console.error(error);
     }
   };
 
-  const updateInventorySettings = async (settingsData: Partial<InventorySettings>) => {
+  const updateClinicSettings = async (settings: Partial<ClinicSettings>) => {
     try {
-      if (!user) {
-        toast.error('Authentication required to update inventory settings.');
-        return;
-      }
-
+      // Assuming clinic settings also has a fixed ID, e.g., '1'
       const { data, error } = await supabase
-        .from('inventory_settings')
-        .upsert({
-          user_id: user.id, // Ensure settings are linked to user
-          low_stock_threshold: settingsData.lowStockThreshold,
-          enable_auto_reorder: settingsData.enableAutoReorder,
-          auto_reorder_threshold: settingsData.autoReorderThreshold,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id', // Upsert based on user_id
-        })
+        .from('clinic_settings')
+        .update(settings as SupabaseClinicSettings) // Cast to Supabase type for update
+        .eq('id', clinicSettings?.id || '1') // Use existing ID or default to '1'
         .select()
         .single();
 
       if (error) throw error;
+      setClinicSettings(data);
+      toast.success('Clinic settings updated');
+    } catch (error: unknown) { // Explicitly type error
+      toast.error('Failed to update clinic settings');
+      console.error(error);
+    }
+  };
 
-      setInventorySettings({
-        id: data.id,
-        lowStockThreshold: data.low_stock_threshold,
-        enableAutoReorder: data.enable_auto_reorder,
-        autoReorderThreshold: data.auto_reorder_threshold,
-        createdAt: data.created_at ? new Date(data.created_at) : new Date(),
-        updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
-      });
+  const updateInventorySettings = async (settings: Partial<InventorySettings>) => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_settings')
+        .update(settings as SupabaseInventorySettings) // Cast to Supabase type for update
+        .eq('id', inventorySettings.id) // Use the ID from state
+        .select()
+        .single();
+      if (error) throw error;
+      setInventorySettings(data);
       toast.success('Inventory settings updated');
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to update inventory settings');
       console.error(error);
     }
@@ -863,70 +958,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const markAlertAsRead = async (id: string, type: 'stock' | 'payment') => {
     try {
-      if (!user) {
-        toast.error('Authentication required to mark alerts as read.');
-        return;
-      }
-
       if (type === 'stock') {
         const { error } = await supabase
           .from('stock_alerts')
-          .update({ is_read: true })
-          .eq('id', id)
-          .eq('user_id', user.id); // Ensure user owns the record
+          .update({ is_read: true, updated_at: new Date().toISOString() }) // Convert date to ISO string
+          .eq('id', id);
         if (error) throw error;
-        setStockAlerts(prev => prev.map(alert => alert.id === id ? { ...alert, isRead: true } : alert));
+        setStockAlerts(prev => prev.map(alert =>
+          alert.id === id ? { ...alert, isRead: true } : alert
+        ));
       } else if (type === 'payment') {
         const { error } = await supabase
           .from('payment_alerts')
-          .update({ is_read: true })
-          .eq('id', id)
-          .eq('user_id', user.id); // Ensure user owns the record
+          .update({ is_read: true, updated_at: new Date().toISOString() }) // Convert date to ISO string
+          .eq('id', id);
         if (error) throw error;
-        setPaymentAlerts(prev => prev.map(alert => alert.id === id ? { ...alert, isRead: true } : alert));
+        setPaymentAlerts(prev => prev.map(alert =>
+          alert.id === id ? { ...alert, isRead: true } : alert
+        ));
       }
       toast.success('Alert marked as read');
-    } catch (error) {
+    } catch (error: unknown) { // Explicitly type error
       toast.error('Failed to mark alert as read');
       console.error(error);
     }
   };
 
 
-  const contextValue: AppContextType = {
-    patients,
-    treatments,
-    inventoryItems,
-    inventoryTransactions,
-    stockAlerts,
-    payments,
-    paymentAlerts,
-    paymentSettings,
-    clinicSettings,
-    inventorySettings,
-    user,
-    session,
-    authLoading,
-    addPatient,
-    updatePatient,
-    deletePatient,
-    addTreatment,
-    updateTreatment,
-    addInventoryItem,
-    updateInventoryItem,
-    deleteInventoryItem,
-    addInventoryTransaction,
-    addPayment,
-    updatePaymentSettings,
-    updateInventorySettings,
-    markAlertAsRead,
-    updateClinicSettings: function (): Promise<void> {
-      throw new Error('Function not implemented.');
-    }
-  };
-
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider
+      value={{
+        patients,
+        treatments,
+        inventoryItems,
+        inventoryTransactions,
+        stockAlerts,
+        payments,
+        paymentAlerts,
+        paymentSettings,
+        clinicSettings,
+        inventorySettings,
+        user,
+        session,
+        authLoading,
+        addPatient,
+        updatePatient,
+        deletePatient,
+        addTreatment,
+        updateTreatment,
+        addInventoryItem,
+        updateInventoryItem,
+        deleteInventoryItem,
+        addInventoryTransaction,
+        addPayment,
+        updatePaymentSettings,
+        updateClinicSettings,
+        updateInventorySettings,
+        markAlertAsRead,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

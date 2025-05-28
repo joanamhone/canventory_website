@@ -1,13 +1,16 @@
 // src/types/payment.ts
 
+export type PaymentMethod = 'cash' | 'card' | 'mobile' | 'insurance' | 'other';
+export type PaymentStatus = 'completed' | 'pending' | 'failed' | 'partial'; // Added 'partial' as it's used in AppContext
+
 export interface Payment {
   id: string;
   treatmentId: string;
   patientId: string;
   amount: number;
   paymentDate: Date;
-  method: 'cash' | 'card' | 'mobile' | 'insurance' | 'other'; // Added 'insurance' and 'other' for flexibility
-  status: 'completed' | 'pending' | 'failed'; // Added status property
+  method: PaymentMethod; // Using the exported type
+  status: PaymentStatus; // Using the exported type
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
