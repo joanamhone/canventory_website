@@ -507,140 +507,137 @@ const Patients: React.FC = () => {
         )}
       </div>
 
-    {/* Add Patient Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          {/* Main modal content container:
-            - flex flex-col: Allows header, form, and footer to stack vertically.
-            - max-h-[90vh] overflow-hidden: Limits height and enables overall modal scrolling if content exceeds.
-            - mx-auto: Centers the modal horizontally when it doesn't take full width.
-          */}
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl flex flex-col max-h-[90vh] overflow-hidden mx-auto">
-            {/* Modal Header - flex-shrink-0 prevents it from shrinking during scroll */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-800">Add New Patient</h2>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
-              >
-                <X size={20} />
-              </button>
+    {/* Add Patient Modal (existing) */}
+{showAddForm && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    {/* Main modal content container */}
+    <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+      {/* Modal Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+        <h2 className="text-lg font-semibold text-gray-800">Add New Patient</h2>
+        <button
+          onClick={() => setShowAddForm(false)}
+          className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Modal Form Content */}
+      <form onSubmit={handleSubmit} className="p-4 flex-grow">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={patientData.name}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Age
+              </label>
+              <input
+                type="number"
+                name="age"
+                value={patientData.age}
+                onChange={handleInputChange}
+                required
+                min="0"
+                max="150"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
             </div>
 
-            {/* Modal Form Content - flex-grow allows it to take available space, overflow-y-auto enables scrolling for THIS SECTION */}
-            <form onSubmit={handleSubmit} className="p-4 flex-grow overflow-y-auto">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={patientData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gender
+              </label>
+              <select
+                name="gender"
+                value={patientData.gender}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Age
-                    </label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={patientData.age}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      max="150"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                  </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Residence
+            </label>
+            <input
+              type="text"
+              name="residence"
+              value={patientData.residence}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gender
-                    </label>
-                    <select
-                      name="gender"
-                      value={patientData.gender}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={patientData.phone}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Residence
-                  </label>
-                  <input
-                    type="text"
-                    name="residence"
-                    value={patientData.residence}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={patientData.phone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={patientData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-              </div>
-
-              {/* Modal Footer - NOW INSIDE THE FORM! */}
-              <div className="mt-6 flex justify-end gap-3 border-t border-gray-200 pt-4 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
-                >
-                  <Check size={16} />
-                  Save Patient
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={patientData.email}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
           </div>
         </div>
-      )}
+      
+
+      {/* Modal Footer */}
+      <div className="mt-6 flex justify-end gap-3 p-4 border-t border-gray-200 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setShowAddForm(false)}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-700 transition-colors flex items-center gap-2"
+        >
+          <Check size={16} />
+          Save Patient
+        </button>
+      </div>
+     </form>
+    </div>
+  </div>
+)}
 
       {/* Edit Patient Modal */}
       {isEditOpen && editingPatient && (
