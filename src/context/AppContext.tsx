@@ -497,64 +497,82 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [treatments, paymentAlerts, patients, paymentSettings.gracePeriod, user, session, authLoading]);
 
-  // Check low stock alerts and add to DB if missing
   useEffect(() => {
-    async function checkLowStock() {
-      if (!user || !session || inventoryItems.length === 0 || authLoading) {
-        return;
+  async function checkLowStock() {
+    if (!user || !session || inventoryItems.length === 0 || authLoading) {
+      return;
+    }
+
+    for (const item of inventoryItems) {
+      const { data: dbExistingAlerts, error: dbCheckError } = await supabase
+        .from('stock_alerts')
+        .select('*')
+        .eq('inventory_item_id', item.id)
+        .eq('type', 'low')
+        .eq('is_read', false);
+
+      if (dbCheckError) {
+        console.error('Error checking stock alerts in DB:', dbCheckError);
+        continue;
       }
-      for (const item of inventoryItems) {
-        if (item.currentStock <= item.reorderLevel) {
-          // Check directly in the database for an existing UNREAD alert for this item
-          const { data: dbExistingAlerts, error: dbCheckError } = await supabase
-            .from('stock_alerts')
-            .select('*')
-            .eq('inventory_item_id', item.id)
-            .eq('type', 'low')
-            .eq('is_read', false) // Crucial: only consider unread alerts
-            .limit(1);
 
-          if (dbCheckError) {
-            console.error('Error checking for existing stock alert in DB:', dbCheckError);
-            continue; // Skip to next item to avoid infinite loop on DB error
-          }
+      const isLow = item.currentStock <= item.reorderLevel;
 
-          // If no existing unread alert is found in the database
-          if (!dbExistingAlerts || dbExistingAlerts.length === 0) {
-            const newAlert = {
-              inventory_item_id: item.id,
-              type: 'low',
-              message: `${item.name} is low in stock (${item.currentStock} ${item.unit} remaining)`,
-              is_read: false,
-              created_at: new Date(),
-            };
-            const { data, error } = await supabase.from('stock_alerts').insert(newAlert).select().single();
-            if (error) {
-              console.error('Failed to add stock alert:', error);
-            } else if (data) {
-              const addedAlert: StockAlert = {
-                id: data.id,
-                inventoryItemId: data.inventory_item_id,
-                type: data.type as StockAlertType, // Ensure type is correctly cast
-                message: data.message,
-                isRead: data.is_read,
-                createdAt: data.created_at ? new Date(data.created_at) : new Date(),
-              };
-              setStockAlerts(prev => [...prev, addedAlert]);
-              toast.error(`Low stock alert: ${item.name}`, {
-                duration: 5000,
-                position: 'top-right',
-              });
-            }
-          }
+      // CASE 1: Item is low and no alert exists → ADD ALERT
+      if (isLow && (!dbExistingAlerts || dbExistingAlerts.length === 0)) {
+        const newAlert = {
+          inventory_item_id: item.id,
+          type: 'low',
+          message: `${item.name} is low in stock (${item.currentStock} ${item.unit} remaining)`,
+          is_read: false,
+          created_at: new Date(),
+        };
+
+        const { data, error } = await supabase.from('stock_alerts').insert(newAlert).select().single();
+        if (error) {
+          console.error('Failed to add stock alert:', error);
+        } else if (data) {
+          const addedAlert: StockAlert = {
+            id: data.id,
+            inventoryItemId: data.inventory_item_id,
+            type: data.type as StockAlertType,
+            message: data.message,
+            isRead: data.is_read,
+            createdAt: new Date(data.created_at),
+          };
+          setStockAlerts(prev => [...prev, addedAlert]);
+          toast.error(`Low stock alert: ${item.name}`, {
+            duration: 5000,
+            position: 'top-right',
+          });
+        }
+      }
+
+      // CASE 2: Item is no longer low but alert exists → MARK ALERT AS READ
+      if (!isLow && dbExistingAlerts && dbExistingAlerts.length > 0) {
+        const alertIds = dbExistingAlerts.map(alert => alert.id);
+
+        const { error: updateError } = await supabase
+          .from('stock_alerts')
+          .update({ is_read: true })
+          .in('id', alertIds);
+
+        if (updateError) {
+          console.error('Failed to mark stock alerts as read:', updateError);
+        } else {
+          // Optionally remove from local state too
+          setStockAlerts(prev =>
+            prev.filter(alert => !alertIds.includes(alert.id))
+          );
         }
       }
     }
+  }
 
-    if (user && session && inventoryItems.length > 0 && !authLoading) {
-      checkLowStock();
-    }
-  }, [inventoryItems, stockAlerts, user, session, authLoading]);
+  if (user && session && inventoryItems.length > 0 && !authLoading) {
+    checkLowStock();
+  }
+}, [inventoryItems, user, session, authLoading]);
 
   // PATIENT ACTIONS
   const addPatient = async (

@@ -147,6 +147,20 @@ const Reports: React.FC = () => {
       .slice(0, 5); // Top 5 products
   }, [filteredTreatments]);
 
+  const mostOccurringDiagnosesData = useMemo(() => {
+  const diagnosisCountMap: { [key: string]: number } = {};
+  filteredTreatments.forEach(treatment => {
+    if (treatment.diagnosis) {
+      diagnosisCountMap[treatment.diagnosis] = (diagnosisCountMap[treatment.diagnosis] || 0) + 1;
+    }
+  });
+  return Object.entries(diagnosisCountMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5); // Top 5 diagnoses
+}, [filteredTreatments]);
+
+
   const inventoryTransactionsTrendData = useMemo(() => {
     const dataMap: { [key: string]: { date: string; additions: number; deductions: number } } = {};
 
@@ -665,7 +679,30 @@ const Reports: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+
+
+            <div className="bg-white rounded-lg shadow-card overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="font-semibold text-lg">Most Occuring Diagnoses</h3>
+              </div>
+              <div className="p-4 h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={mostOccurringDiagnosesData}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Patients" fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
+
+          
 
           <div className="bg-white rounded-lg shadow-card overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
