@@ -11,6 +11,11 @@ import InventoryStatus from '../components/Dashboard/InventoryStatus';
 import RecentTreatments from '../components/Dashboard/RecentTreatments';
 import { useAppContext } from '../context/AppContext';
 
+//Format for the money
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+
+
 const Dashboard: React.FC = () => {
   const { patients, treatments, inventoryItems } = useAppContext();
   
@@ -59,7 +64,7 @@ const Dashboard: React.FC = () => {
         />
         <StatsCard 
           title="Revenue" 
-          value={`${totalRevenue.toFixed(2)}`} 
+          value={`K${formatMoney(totalRevenue)}`} 
           icon={<CreditCard size={20} className="text-white" />}
           change={15}
           color="secondary"

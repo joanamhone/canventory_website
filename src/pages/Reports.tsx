@@ -28,6 +28,11 @@ import { addDays, subDays, format, differenceInDays, isWithinInterval, startOfDa
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+//Format for the money
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+
+
 const Reports: React.FC = () => {
   // Destructure data from AppContext
   const { patients, treatments, inventoryItems, payments, inventoryTransactions } = useAppContext();
@@ -372,7 +377,7 @@ const Reports: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Total Revenue</p>
-              <h3 className="text-2xl font-bold mt-2">K{totalRevenue.toFixed(2)}</h3>
+              <h3 className="text-2xl font-bold mt-2">K{formatMoney(totalRevenue)}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd,yyyy')}
               </p>
@@ -387,7 +392,7 @@ const Reports: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Avg. Daily Revenue</p>
-              <h3 className="text-2xl font-bold mt-2">K{avgDailyRevenue.toFixed(2)}</h3>
+              <h3 className="text-2xl font-bold mt-2">K{formatMoney(avgDailyRevenue)}</h3>
               <p className="text-sm text-gray-500 mt-1">
                 Per day over {days} days
               </p>
@@ -408,7 +413,7 @@ const Reports: React.FC = () => {
               </p>
               <h3 className="text-2xl font-bold mt-2">
                 {reportType === 'financial' && activePatientsInPeriod}
-                {reportType === 'inventory' && `K${inventoryValue.toFixed(2)}`}
+                {reportType === 'inventory' && `K${formatMoney(inventoryValue)}`}
                 {reportType === 'patient' && totalPatients}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
@@ -525,8 +530,8 @@ const Reports: React.FC = () => {
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(value) => `K${value}`} />
-                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} />
+                    <YAxis tickFormatter={(value) => `K${formatMoney(value)}`} />
+                    <Tooltip formatter={(value: number) => `K${formatMoney(value)}`} />
                     <Bar dataKey="value" name="Revenue" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -560,7 +565,7 @@ const Reports: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `K${value.toFixed(2)}`} />
+                    <Tooltip formatter={(value: number) => `K${formatMoney(value)}`} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

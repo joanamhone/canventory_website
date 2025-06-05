@@ -17,6 +17,11 @@ import { InventoryItem, InventoryTransaction, InventoryItemCategory, InventoryTr
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
+//Format for the money
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+
+
 // Initial data for adding/editing inventory items
 const initialInventoryItemData = {
   name: '',
@@ -267,7 +272,7 @@ const Inventory: React.FC = () => {
                     <td className="px-6 py-4 text-gray-500 ">{item.supplier || '-'}</td>
                     <td className="px-6 py-4 text-gray-500 ">{item.currentStock} {item.unit}</td>
                     {/* Fixed: Use nullish coalescing to ensure unitCost is a number before toFixed */}
-                    <td className="px-6 py-4 text-gray-500 ">K{(item.unitCost ?? 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-500 ">K{formatMoney(item.unitCost ?? 0)}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {/* Add Transaction Button for specific item */}
@@ -676,7 +681,7 @@ const Inventory: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium">Unit Cost:</p>
-                  <p>K{(selectedInventoryItem.unitCost ?? 0).toFixed(2)}</p> {/* Fixed here */}
+                  <p>K{formatMoney(selectedInventoryItem.unitCost ?? 0)}</p> {/* Fixed here */}
                 </div>
                 <div>
                   <p className="font-medium">Reorder Level:</p>

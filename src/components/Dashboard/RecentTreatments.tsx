@@ -6,6 +6,12 @@ import { format } from 'date-fns';
 import { Treatment } from '../../types/patient';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
+//Format for the money
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+
+
+
 const RecentTreatments: React.FC = () => {
   const { treatments, patients } = useAppContext();
   const navigate = useNavigate(); // Initialize useNavigate hook
@@ -202,7 +208,7 @@ const RecentTreatments: React.FC = () => {
                             <div>
                               <h4 className="font-medium">{medication.name}</h4>
                               <p className="text-sm text-gray-600 mt-1">
-                                {medication.quantity} units @ K{(medication.unitCost ?? 0).toFixed(2)} each {/* Changed $ to K */}
+                                {medication.quantity} units @ K{formatMoney(medication.unitCost ?? 0)} each {/* Changed $ to K */}
                               </p>
                               <p className="text-sm text-gray-600">Dosage: {medication.dosage}</p>
                               {medication.instructions && (
@@ -213,7 +219,7 @@ const RecentTreatments: React.FC = () => {
                             </div>
                             <span className="text-primary font-medium">
                               {/* Changed $ to K */}
-                              K{(medication.totalCost ?? 0).toFixed(2)}
+                              K{formatMoney(medication.totalCost ?? 0)}
                             </span>
                           </div>
                         </div>
@@ -221,7 +227,7 @@ const RecentTreatments: React.FC = () => {
                       <div className="flex justify-between pt-2 text-sm font-medium">
                         <span>Total Medications Cost:</span>
                         {/* Changed $ to K */}
-                        <span>K{(getMedicationsCost(selectedTreatment) ?? 0).toFixed(2)}</span>
+                        <span>K{formatMoney(getMedicationsCost(selectedTreatment) ?? 0)}</span>
                       </div>
                     </div>
                   ) : (
@@ -247,7 +253,7 @@ const RecentTreatments: React.FC = () => {
                             </div>
                             <span className="text-secondary font-medium">
                               {/* Changed $ to K */}
-                              K{(service.cost ?? 0).toFixed(2)}
+                              K{formatMoney(service.cost ?? 0)}
                             </span>
                           </div>
                         </div>
@@ -255,7 +261,7 @@ const RecentTreatments: React.FC = () => {
                       <div className="flex justify-between pt-2 text-sm font-medium">
                         <span>Total Services Cost:</span>
                         {/* Changed $ to K */}
-                        <span>K{(getServicesCost(selectedTreatment) ?? 0).toFixed(2)}</span>
+                        <span>K{formatMoney(getServicesCost(selectedTreatment) ?? 0)}</span>
                       </div>
                     </div>
                   ) : (
@@ -270,7 +276,7 @@ const RecentTreatments: React.FC = () => {
                   <span className="font-medium">Total Treatment Cost:</span>
                   <span className="text-xl font-bold text-primary">
                     {/* Changed $ to K */}
-                    K{(selectedTreatment.totalCost ?? 0).toFixed(2)}
+                    K{formatMoney(selectedTreatment.totalCost ?? 0)}
                   </span>
                 </div>
               </div>

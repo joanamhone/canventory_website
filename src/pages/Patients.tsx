@@ -19,6 +19,11 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Patient, Treatment, TreatmentMedication, TreatmentService } from '../types/patient';
 import toast from 'react-hot-toast'; // Added toast import
 
+//Format for the money
+const formatMoney = (amount: number) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+
+
 // Initial data for the patient form
 const initialPatientData = {
   name: '',
@@ -449,7 +454,7 @@ const Patients: React.FC = () => {
                       <td className="px-6 py-4">
                         {hasOutstandingBalance ? (
                           <span className="text-error font-medium">
-                            K{totalOwed.toFixed(2)}
+                            K{formatMoney(totalOwed)}
                           </span>
                         ) : (
                           <span className="text-green-600">Paid</span>
@@ -1062,7 +1067,7 @@ const Patients: React.FC = () => {
                     <p className="flex items-center gap-1">
                       <span className="font-semibold">Outstanding Balance:</span>
                       {selectedPatient.hasOutstandingBalance ? (
-                        <span className="text-error font-medium">K{selectedPatient.totalOutstanding.toFixed(2)}</span>
+                        <span className="text-error font-medium">K{formatMoney(selectedPatient.totalOutstanding)}</span>
                       ) : (
                         <span className="text-green-600">Paid</span>
                       )}
@@ -1088,7 +1093,8 @@ const Patients: React.FC = () => {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-md font-bold text-primary">K{treatment.totalCost.toFixed(2)}</p>
+                            <p className="text-md font-bold text-primary">K{new Intl.NumberFormat().format(Number(treatment.totalCost.toFixed(2)))}</p>
+
                             <span className={`text-sm font-medium ${
                               treatment.paymentStatus === 'paid' ? 'text-green-600' :
                               treatment.paymentStatus === 'partial' ? 'text-orange-500' : 'text-error'
@@ -1152,20 +1158,32 @@ const Patients: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-gray-700">
-                    Patient: <span className="font-medium">{selectedPatient.name}</span>
-                  </p>
-                  <p className="text-gray-700">
-                    Treatment for: <span className="font-medium">{selectedTreatment.diagnosis}</span>
-                  </p>
-                  <p className="text-gray-700">
-                    Total Cost: <span className="font-medium">K{selectedTreatment.totalCost.toFixed(2)}</span>
-                  </p>
-                  <p className="text-gray-700">
-                    Amount Paid: <span className="font-medium">K{selectedTreatment.amountPaid.toFixed(2)}</span>
-                  </p>
-                  <p className="text-gray-700 text-lg font-bold mt-2">
-                    Outstanding: <span className="text-error">K{(selectedTreatment.totalCost - selectedTreatment.amountPaid).toFixed(2)}</span>
-                  </p>
+                      Patient: <span className="font-medium">{selectedPatient.name}</span>
+                    </p>
+                    <p className="text-gray-700">
+                      Treatment for: <span className="font-medium">{selectedTreatment.diagnosis}</span>
+                    </p>
+                    <p className="text-gray-700">
+                      Total Cost: 
+                      <span className="font-medium">
+                        K{new Intl.NumberFormat().format(Number(selectedTreatment.totalCost.toFixed(2)))}
+                      </span>
+                    </p>
+                    <p className="text-gray-700">
+                      Amount Paid: 
+                      <span className="font-medium">
+                        K{new Intl.NumberFormat().format(Number(selectedTreatment.amountPaid.toFixed(2)))}
+                      </span>
+                    </p>
+                    <p className="text-gray-700 text-lg font-bold mt-2">
+                      Outstanding: 
+                      <span className="text-error">
+                        K{new Intl.NumberFormat().format(
+                          Number((selectedTreatment.totalCost - selectedTreatment.amountPaid).toFixed(2))
+                        )}
+                      </span>
+                    </p>
+
                 </div>
 
                 <div>
@@ -1312,7 +1330,7 @@ const Patients: React.FC = () => {
                             <div>
                               <h4 className="font-medium">{medication.name}</h4>
                               <p className="text-sm text-gray-600 mt-1">
-                                {medication.quantity} units @ K{(medication.unitCost ?? 0).toFixed(2)} each
+                                {medication.quantity} units @ K{formatMoney((medication.unitCost ?? 0))} each
                               </p>
                               <p className="text-sm text-gray-600">Dosage: {medication.dosage}</p>
                               {medication.instructions && (
@@ -1322,14 +1340,14 @@ const Patients: React.FC = () => {
                               )}
                             </div>
                             <span className="text-primary font-medium">
-                              K{(medication.totalCost ?? 0).toFixed(2)}
+                              K{formatMoney(medication.totalCost ?? 0)}
                             </span>
                           </div>
                         </div>
                       ))}
                       <div className="flex justify-between pt-2 text-sm font-medium">
                         <span>Total Medications Cost:</span>
-                        <span>K{selectedTreatment.medications.reduce((sum, med) => sum + (med.totalCost ?? 0), 0).toFixed(2)}</span>
+                        <span>K{formatMoney(selectedTreatment.medications.reduce((sum, med) => sum + (med.totalCost ?? 0), 0))}</span>
                       </div>
                     </div>
                   ) : (
@@ -1354,14 +1372,15 @@ const Patients: React.FC = () => {
                               )}
                             </div>
                             <span className="text-secondary font-medium">
-                              K{(service.cost ?? 0).toFixed(2)}
+                              K{formatMoney(service.cost ?? 0)}
                             </span>
                           </div>
                         </div>
                       ))}
                       <div className="flex justify-between pt-2 text-sm font-medium">
                         <span>Total Services Cost:</span>
-                        <span>K{selectedTreatment.services.reduce((sum, service) => sum + (service.cost ?? 0), 0).toFixed(2)}</span>
+                        <span>K{formatMoney(selectedTreatment.services.reduce((sum, service) => sum + (service.cost ?? 0), 0))}</span>
+
                       </div>
                     </div>
                   ) : (
@@ -1375,7 +1394,7 @@ const Patients: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total Treatment Cost:</span>
                   <span className="text-xl font-bold text-primary">
-                    K{(selectedTreatment.totalCost ?? 0).toFixed(2)}
+                    K{formatMoney(selectedTreatment.totalCost ?? 0)}
                   </span>
                 </div>
               </div>
