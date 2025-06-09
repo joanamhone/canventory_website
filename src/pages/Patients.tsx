@@ -327,6 +327,13 @@ const Patients: React.FC = () => {
     );
   };
 
+  const calculateTotalPaid = (patientId: string) => {
+  return getPatientTreatments(patientId).reduce(
+    (sum, treatment) => sum + treatment.amountPaid,
+    0
+  );
+};
+
   // Open edit modal and fill form (existing functionality)
   const openEditModal = (patient: Patient) => {
     setEditingPatient({
@@ -452,14 +459,26 @@ const Patients: React.FC = () => {
                         {patient.phone || patient.email || '-'}
                       </td>
                       <td className="px-6 py-4">
-                        {hasOutstandingBalance ? (
-                          <span className="text-error font-medium">
-                            K{formatMoney(totalOwed)}
-                          </span>
-                        ) : (
-                          <span className="text-green-600">Paid</span>
-                        )}
+                        {(() => {
+                          const totalPaid = calculateTotalPaid(patient.id);
+                          const totalOwed = calculateTotalOwed(patient.id);
+                          const totalCost = totalPaid + totalOwed;
+
+                          if (totalPaid === 0) {
+                            return <span className="text-yellow-400 font-medium">Pending</span>;
+                          } else if (totalPaid < totalCost) {
+                            return (
+                              <span className="text-orange-500 font-medium">
+                                {/* Partial (K{formatMoney(totalPaid)} / K{formatMoney(totalCost)}) */}
+                                Partial
+                              </span>
+                            );
+                          } else {
+                            return <span className="text-green-600 font-medium">Paid</span>;
+                          }
+                        })()}
                       </td>
+
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {/* Add Treatment Button */}
@@ -1064,14 +1083,32 @@ const Patients: React.FC = () => {
                     <p><span className="font-semibold">Phone:</span> {selectedPatient.phone || 'N/A'}</p>
                     <p><span className="font-semibold">Email:</span> {selectedPatient.email || 'N/A'}</p>
                     <p><span className="font-semibold">Address:</span> {selectedPatient.address || 'N/A'}</p>
-                    <p className="flex items-center gap-1">
-                      <span className="font-semibold">Outstanding Balance:</span>
-                      {selectedPatient.hasOutstandingBalance ? (
-                        <span className="text-error font-medium">K{formatMoney(selectedPatient.totalOutstanding)}</span>
-                      ) : (
-                        <span className="text-green-600">Paid</span>
-                      )}
-                    </p>
+                  {(() => {
+                        const totalPaid = calculateTotalPaid(selectedPatient.id);
+                        const totalOwed = calculateTotalOwed(selectedPatient.id);
+                        const totalCost = totalPaid + totalOwed;
+
+                        let status: JSX.Element;
+                        if (totalPaid === 0) {
+                          status = <span className="text-yellow-400 font-medium">Pending </span>;
+                        } else if (totalPaid < totalCost) {
+                          status = (
+                            <span className="text-orange-500 font-medium">
+                              Partial
+                            </span>
+                          );
+                        } else {
+                          status = <span className="text-green-600 font-medium">Paid</span>;
+                        }
+
+                        return (
+                          <p className="flex items-center gap-1">
+                            <span className="font-semibold">Balance Status:</span>
+                            {status}
+                          </p>
+                        );
+                      })()}
+
                   </div>
                 </div>
               </div>
